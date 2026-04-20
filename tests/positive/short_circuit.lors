@@ -1,0 +1,15 @@
+func side(v bool) bool {
+  return v;
+}
+
+func entry() int {
+  var a bool = false;
+  var b bool = true;
+  var x bool = a && side(b);
+  var y bool = b || side(a);
+  if !x && y {
+    return 1;
+  }
+  return 0;
+}
+

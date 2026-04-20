@@ -1,0 +1,10 @@
+func entry() int {
+  var x int = 2;
+  var y float = x + 1.5;
+  if y > 3.0 {
+    return 1;
+  } else {
+    return 0;
+  }
+}
+

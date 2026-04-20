@@ -1,0 +1,8 @@
+func max(a int, b int) int {
+  return a > b ? a : b;
+}
+
+func entry() int {
+  return max(7, 4);
+}
+

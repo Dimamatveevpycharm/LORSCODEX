@@ -1,0 +1,8 @@
+func entry() int {
+  var sum int = 0;
+  for var i int = 0; i < 5; i = i + 1 {
+    sum = sum + i;
+  }
+  return sum;
+}
+

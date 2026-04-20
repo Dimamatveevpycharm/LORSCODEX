@@ -1,0 +1,8 @@
+func f(a int) int {
+  return a;
+}
+
+func entry() int {
+  return f(1, 2);
+}
+

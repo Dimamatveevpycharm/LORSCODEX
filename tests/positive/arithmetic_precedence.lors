@@ -1,0 +1,6 @@
+func entry() int {
+  var a int = 2 + 3 * 4;
+  var b int = (2 + 3) * 4;
+  return b - a;
+}
+

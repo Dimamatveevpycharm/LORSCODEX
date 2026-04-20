@@ -1,0 +1,6 @@
+func entry() int {
+  var x int = 0;
+  x = 1.25;
+  return x;
+}
+

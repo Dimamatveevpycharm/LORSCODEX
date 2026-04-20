@@ -1,0 +1,4 @@
+func entry( int {
+  return 0;
+}
+
