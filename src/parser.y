@@ -200,7 +200,7 @@ for_init
 
 for_post
   : /* empty */ { $$ = nullptr; }
-  | assign_stmt { $$ = dynamic_cast<lorsc::AssignStmt*>($1); }
+  | assign_stmt { $$ = static_cast<lorsc::AssignStmt*>($1); }
   ;
 
 var_decl

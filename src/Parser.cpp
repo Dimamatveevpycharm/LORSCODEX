@@ -37,13 +37,16 @@ std::unique_ptr<Program> parseFile(const std::string& filePath, DiagnosticsEngin
 
   if (parseResult != 0 || gParsedProgram == nullptr || diagnostics.hasErrors()) {
     gParsedProgram = nullptr;
+    gDiagnostics = nullptr;
+    gInputFile.clear();
     return nullptr;
   }
 
   std::unique_ptr<Program> program(gParsedProgram);
   gParsedProgram = nullptr;
+  gDiagnostics = nullptr;
+  gInputFile.clear();
   return program;
 }
 
 }  // namespace lorsc
-

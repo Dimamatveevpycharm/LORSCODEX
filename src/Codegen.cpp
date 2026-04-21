@@ -16,8 +16,6 @@
 #include "llvm/IR/Verifier.h"
 #include "llvm/MC/TargetRegistry.h"
 #include "llvm/Support/FileSystem.h"
-#include "llvm/TargetParser/Host.h"
-#include "llvm/Support/InitLLVM.h"
 #include "llvm/Support/CodeGen.h"
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/raw_ostream.h"
@@ -225,6 +223,9 @@ bool CodeGenerator::codegenIf(IfStmt& stmt) {
     return false;
   }
   condValue = toBool(condValue, stmt.condition->inferredType);
+  if (condValue == nullptr) {
+    return false;
+  }
 
   llvm::BasicBlock* thenBB = llvm::BasicBlock::Create(*context_, "if.then", fn);
   llvm::BasicBlock* elseBB = stmt.elseBlock ? llvm::BasicBlock::Create(*context_, "if.else", fn) : nullptr;
@@ -283,6 +284,10 @@ bool CodeGenerator::codegenFor(ForStmt& stmt) {
     return false;
   }
   condValue = toBool(condValue, stmt.condition->inferredType);
+  if (condValue == nullptr) {
+    popScope();
+    return false;
+  }
   builder_->CreateCondBr(condValue, bodyBB, exitBB);
 
   builder_->SetInsertPoint(bodyBB);
@@ -329,6 +334,9 @@ bool CodeGenerator::codegenReturn(ReturnStmt& stmt) {
       targetType = TypeKind::Bool;
     }
     value = castTo(targetType, value, sourceType);
+    if (value == nullptr) {
+      return false;
+    }
   }
   builder_->CreateRet(value);
   return true;
@@ -424,8 +432,14 @@ llvm::Value* CodeGenerator::codegenExpr(Expr& expr) {
                             : expectedType->isIntegerTy(1)  ? TypeKind::Bool
                                                              : TypeKind::Invalid;
         argVal = castTo(expected, argVal, call->args[i]->inferredType);
+        if (argVal == nullptr) {
+          return nullptr;
+        }
       }
       args.push_back(argVal);
+    }
+    if (callee->getReturnType()->isVoidTy()) {
+      return builder_->CreateCall(callee, args);
     }
     return builder_->CreateCall(callee, args, call->callee + ".call");
   }
@@ -459,9 +473,15 @@ llvm::Value* CodeGenerator::codegenUnary(UnaryExpr& expr) {
 llvm::Value* CodeGenerator::codegenBinary(BinaryExpr& expr) {
   if (expr.op == BinaryOpKind::LogicalAnd || expr.op == BinaryOpKind::LogicalOr) {
     llvm::Function* fn = builder_->GetInsertBlock()->getParent();
-    llvm::BasicBlock* lhsBB = builder_->GetInsertBlock();
     llvm::Value* lhs = codegenExpr(*expr.lhs);
+    if (lhs == nullptr) {
+      return nullptr;
+    }
     lhs = toBool(lhs, expr.lhs->inferredType);
+    if (lhs == nullptr) {
+      return nullptr;
+    }
+    llvm::BasicBlock* lhsEnd = builder_->GetInsertBlock();
 
     llvm::BasicBlock* rhsBB = llvm::BasicBlock::Create(*context_, "logic.rhs", fn);
     llvm::BasicBlock* mergeBB = llvm::BasicBlock::Create(*context_, "logic.merge", fn);
@@ -474,17 +494,23 @@ llvm::Value* CodeGenerator::codegenBinary(BinaryExpr& expr) {
 
     builder_->SetInsertPoint(rhsBB);
     llvm::Value* rhs = codegenExpr(*expr.rhs);
+    if (rhs == nullptr) {
+      return nullptr;
+    }
     rhs = toBool(rhs, expr.rhs->inferredType);
+    if (rhs == nullptr) {
+      return nullptr;
+    }
     builder_->CreateBr(mergeBB);
     llvm::BasicBlock* rhsEnd = builder_->GetInsertBlock();
 
     builder_->SetInsertPoint(mergeBB);
     llvm::PHINode* phi = builder_->CreatePHI(llvmType(TypeKind::Bool), 2, "logic.phi");
     if (expr.op == BinaryOpKind::LogicalAnd) {
-      phi->addIncoming(llvm::ConstantInt::getFalse(*context_), lhsBB);
+      phi->addIncoming(llvm::ConstantInt::getFalse(*context_), lhsEnd);
       phi->addIncoming(rhs, rhsEnd);
     } else {
-      phi->addIncoming(llvm::ConstantInt::getTrue(*context_), lhsBB);
+      phi->addIncoming(llvm::ConstantInt::getTrue(*context_), lhsEnd);
       phi->addIncoming(rhs, rhsEnd);
     }
     return phi;
@@ -562,6 +588,9 @@ llvm::Value* CodeGenerator::codegenTernary(TernaryExpr& expr) {
     return nullptr;
   }
   cond = toBool(cond, expr.condition->inferredType);
+  if (cond == nullptr) {
+    return nullptr;
+  }
 
   llvm::BasicBlock* thenBB = llvm::BasicBlock::Create(*context_, "ternary.then", fn);
   llvm::BasicBlock* elseBB = llvm::BasicBlock::Create(*context_, "ternary.else", fn);
@@ -574,6 +603,9 @@ llvm::Value* CodeGenerator::codegenTernary(TernaryExpr& expr) {
     return nullptr;
   }
   thenValue = castTo(expr.inferredType, thenValue, expr.thenExpr->inferredType);
+  if (thenValue == nullptr) {
+    return nullptr;
+  }
   builder_->CreateBr(mergeBB);
   llvm::BasicBlock* thenEnd = builder_->GetInsertBlock();
 
@@ -583,6 +615,9 @@ llvm::Value* CodeGenerator::codegenTernary(TernaryExpr& expr) {
     return nullptr;
   }
   elseValue = castTo(expr.inferredType, elseValue, expr.elseExpr->inferredType);
+  if (elseValue == nullptr) {
+    return nullptr;
+  }
   builder_->CreateBr(mergeBB);
   llvm::BasicBlock* elseEnd = builder_->GetInsertBlock();
 
@@ -606,7 +641,9 @@ llvm::Value* CodeGenerator::castTo(TypeKind target, llvm::Value* value, TypeKind
   if (target == TypeKind::Bool && source == TypeKind::Float) {
     return builder_->CreateFCmpONE(value, llvm::ConstantFP::get(llvmType(TypeKind::Float), 0.0), "f2b");
   }
-  return value;
+  std::cerr << "internal error: unsupported cast from " << typeToString(source) << " to "
+            << typeToString(target) << "\n";
+  return nullptr;
 }
 
 llvm::Value* CodeGenerator::toBool(llvm::Value* value, TypeKind source) const { return castTo(TypeKind::Bool, value, source); }

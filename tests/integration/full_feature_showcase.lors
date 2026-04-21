@@ -1,0 +1,64 @@
+func absInt(x int) int {
+  if x < 0 {
+    return -x;
+  } else {
+    return x;
+  }
+}
+
+func mixFloat(a int, b float) float {
+  var sum float = a + b;
+  if sum > 10.0 {
+    return sum / 2.0;
+  } else {
+    return sum * 1.5;
+  }
+}
+
+func boolGate(n int) bool {
+  var even bool = (n % 2) == 0;
+  var gt bool = n > 3;
+  return (even && gt) || false;
+}
+
+func sumTo(n int) int {
+  var i int = 0;
+  var acc int = 0;
+  for i < n {
+    acc = acc + i;
+    i = i + 1;
+  }
+  return acc;
+}
+
+func weighted(n int) int {
+  var i int = 0;
+  var total int = 0;
+  for i = 0; i < n; i = i + 1 {
+    total = total + (i * 2);
+  }
+  return total;
+}
+
+func noop() void {
+  return;
+}
+
+func entry() int {
+  var base int = sumTo(6);
+  var w int = weighted(4);
+  var f float = mixFloat(5, 3.0);
+  var cond bool = (boolGate(base) && !false) || false;
+  var choose int = cond ? 100 : 7;
+  var neg int = absInt(-9);
+  var total int = base + w + choose + neg;
+
+  if f >= 12.0 {
+    total = total + 1;
+  } else {
+    total = total - 1;
+  }
+
+  noop();
+  return total;
+}
