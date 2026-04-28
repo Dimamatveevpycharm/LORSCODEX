@@ -1,5 +1,35 @@
 /build/
-*.o
-*.ll
-*.out
 
+# Compiler outputs
+*.o
+*.obj
+*.ll
+*.s
+*.out
+*.exe
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Report-generation helpers and local report artifacts
+scripts/edit_report_docx.py
+scripts/generate_report_docx.py
+scripts/insert_toc.py
+scripts/render_docx.py
+scripts/make_contact_sheet.py
+report_work.docx
+report_edited.docx
+docs/LORSC_report.docx
+docs/REPORT_READY.md
+docs/report_outline.md
+rendered_report/
+rendered_report_fix/
+rendered_report_fix2/
+
+# Local listings and scratch files
+project_listing.txt
+all_files_listing.txt
+
+# Optional exported report files
+*.pdf

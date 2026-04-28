@@ -12,11 +12,13 @@ struct Options {
   std::string input;
   std::string outputObject;
   std::string outputIR;
+  std::string outputAsm;
   std::string targetTriple = "riscv64-unknown-linux-gnu";
 };
 
 void printUsage() {
-  std::cerr << "Usage: lorsc <input> -o <output.o> [--emit-llvm <output.ll>] [--target <triple>]\n";
+  std::cerr << "Usage: lorsc <input> -o <output.o> [--emit-llvm <output.ll>] [--emit-asm <output.s>]"
+               " [--target <triple>]\n";
 }
 
 bool parseArgs(int argc, char** argv, Options& options) {
@@ -31,8 +33,12 @@ bool parseArgs(int argc, char** argv, Options& options) {
       options.outputObject = argv[++i];
     } else if (arg == "--emit-llvm" && i + 1 < argc) {
       options.outputIR = argv[++i];
+    } else if (arg == "--emit-asm" && i + 1 < argc) {
+      options.outputAsm = argv[++i];
     } else if (arg == "--target" && i + 1 < argc) {
       options.targetTriple = argv[++i];
+    } else if (arg.rfind("--emit-asm=", 0) == 0) {
+      options.outputAsm = arg.substr(std::string("--emit-asm=").size());
     } else if (arg.rfind("--target=", 0) == 0) {
       options.targetTriple = arg.substr(std::string("--target=").size());
     } else {
@@ -74,10 +80,12 @@ int main(int argc, char** argv) {
   if (!options.outputIR.empty() && !codegen.emitIR(options.outputIR)) {
     return 1;
   }
+  if (!options.outputAsm.empty() && !codegen.emitAssembly(options.outputAsm)) {
+    return 1;
+  }
   if (!codegen.emitObject(options.outputObject)) {
     return 1;
   }
 
   return 0;
 }
-

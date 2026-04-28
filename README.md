@@ -9,7 +9,7 @@
 - Конструкции: `if/else`, `for`, `return`, вызовы функций.
 - Выражения с приоритетами, `?:`, short-circuit для `&&`/`||`.
 - Отдельная семантическая фаза (`Sema`) с диагностикой ошибок.
-- Генерация `LLVM IR` (`--emit-llvm`) и `.o` под `riscv64-unknown-linux-gnu`.
+- Генерация `LLVM IR` (`--emit-llvm`), asm-листинга (`--emit-asm`) и `.o` под `riscv64-unknown-linux-gnu`.
 
 ## Архитектура проекта
 
@@ -51,7 +51,9 @@ sudo apt install -y build-essential cmake flex bison llvm-dev clang lld qemu-use
 cmake -S . -B build
 cmake --build build -j
 
-./build/lorsc tests/integration/demo_entry.lors -o build/demo_entry.o --emit-llvm build/demo_entry.ll
+./build/lorsc tests/integration/demo_entry.lors -o build/demo_entry.o \
+  --emit-llvm build/demo_entry.ll \
+  --emit-asm build/demo_entry.s
 clang --target=riscv64-unknown-linux-gnu -fuse-ld=lld -static runtime/main.c build/demo_entry.o -o build/demo_riscv
 qemu-riscv64 build/demo_riscv
 ```
@@ -93,6 +95,12 @@ bash scripts/build.sh
 ./build/lorsc tests/integration/demo_entry.lors -o build/demo_entry.o --emit-llvm build/demo_entry.ll
 ```
 
+Выгрузка asm-листинга для показа преподавателю:
+
+```bash
+./build/lorsc tests/integration/demo_entry.lors -o build/demo_entry.o --emit-asm build/demo_entry.s
+```
+
 Проверка целевого triple в IR:
 
 ```bash
@@ -107,13 +115,13 @@ file build/demo_entry.o
 
 ## Тестирование
 
-Автотесты (positive + negative):
+Автотесты (positive + negative + integration):
 
 ```bash
 bash scripts/run_tests.sh ./build/lorsc
 ```
 
-Интеграционный прогон demo:
+Интеграционный прогон demo с `.ll/.s/.o`:
 
 ```bash
 bash scripts/demo_run.sh
@@ -128,15 +136,15 @@ bash scripts/demo_run.sh
 - `tests/` — positive/negative/integration тесты
 - `runtime/` — C runtime (`main.c`)
 - `scripts/` — build/demo/tests скрипты
-- `docs/` — спецификация языка, архитектура, тестирование, outline отчёта
+- `docs/` — спецификация языка, архитектура, тестирование и команды запуска
 
 ## Документация
 
 - Подробный пошаговый гайд для новичка: [READMEchild.md](READMEchild.md)
+- Шпаргалка по командам запуска: [docs/commands.md](docs/commands.md)
 - Спецификация языка: [docs/language_spec.md](docs/language_spec.md)
 - Архитектура: [docs/architecture.md](docs/architecture.md)
 - Тестирование: [docs/testing.md](docs/testing.md)
-- Структура отчёта: [docs/report_outline.md](docs/report_outline.md)
 
 ## Особенности линковки под RISC-V в текущей WSL-среде
 

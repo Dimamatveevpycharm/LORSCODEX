@@ -30,6 +30,20 @@ T* dynCast(U* ptr) {
   return dynamic_cast<T*>(ptr);
 }
 
+void initializeLLVMTargets() {
+  static bool initialized = false;
+  if (initialized) {
+    return;
+  }
+
+  llvm::InitializeAllTargetInfos();
+  llvm::InitializeAllTargets();
+  llvm::InitializeAllTargetMCs();
+  llvm::InitializeAllAsmParsers();
+  llvm::InitializeAllAsmPrinters();
+  initialized = true;
+}
+
 }  // namespace
 
 CodeGenerator::CodeGenerator(std::string targetTriple)
@@ -667,18 +681,13 @@ bool CodeGenerator::emitIR(const std::string& path) const {
   return true;
 }
 
-bool CodeGenerator::emitObject(const std::string& path) {
-  llvm::InitializeAllTargetInfos();
-  llvm::InitializeAllTargets();
-  llvm::InitializeAllTargetMCs();
-  llvm::InitializeAllAsmParsers();
-  llvm::InitializeAllAsmPrinters();
-
+std::unique_ptr<llvm::TargetMachine> CodeGenerator::createTargetMachine() {
+  initializeLLVMTargets();
   std::string err;
   const llvm::Target* target = llvm::TargetRegistry::lookupTarget(targetTriple_, err);
   if (target == nullptr) {
     std::cerr << "error: target lookup failed for '" << targetTriple_ << "': " << err << "\n";
-    return false;
+    return nullptr;
   }
 
   llvm::TargetOptions options;
@@ -693,11 +702,43 @@ bool CodeGenerator::emitObject(const std::string& path) {
       target->createTargetMachine(targetTriple_, cpu, features, options, llvm::Reloc::Static));
   if (!targetMachine) {
     std::cerr << "error: failed to create TargetMachine for '" << targetTriple_ << "'\n";
-    return false;
+    return nullptr;
   }
 
   module_->setDataLayout(targetMachine->createDataLayout());
   module_->setTargetTriple(targetTriple_);
+  return targetMachine;
+}
+
+bool CodeGenerator::emitAssembly(const std::string& path) {
+  std::unique_ptr<llvm::TargetMachine> targetMachine = createTargetMachine();
+  if (!targetMachine) {
+    return false;
+  }
+
+  std::error_code ec;
+  llvm::raw_fd_ostream dest(path, ec, llvm::sys::fs::OF_Text);
+  if (ec) {
+    std::cerr << "error: cannot open assembly file '" << path << "': " << ec.message() << "\n";
+    return false;
+  }
+
+  llvm::legacy::PassManager passManager;
+  if (targetMachine->addPassesToEmitFile(passManager, dest, nullptr,
+                                         llvm::CodeGenFileType::AssemblyFile)) {
+    std::cerr << "error: target machine cannot emit assembly file\n";
+    return false;
+  }
+  passManager.run(*module_);
+  dest.flush();
+  return true;
+}
+
+bool CodeGenerator::emitObject(const std::string& path) {
+  std::unique_ptr<llvm::TargetMachine> targetMachine = createTargetMachine();
+  if (!targetMachine) {
+    return false;
+  }
 
   std::error_code ec;
   llvm::raw_fd_ostream dest(path, ec, llvm::sys::fs::OF_None);

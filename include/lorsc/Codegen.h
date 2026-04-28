@@ -15,6 +15,7 @@ class Value;
 class Function;
 class AllocaInst;
 class Type;
+class TargetMachine;
 }  // namespace llvm
 
 namespace lorsc {
@@ -26,6 +27,7 @@ class CodeGenerator {
 
   bool generate(Program& program);
   bool emitIR(const std::string& path) const;
+  bool emitAssembly(const std::string& path);
   bool emitObject(const std::string& path);
 
  private:
@@ -65,6 +67,7 @@ class CodeGenerator {
   llvm::Value* castTo(TypeKind target, llvm::Value* value, TypeKind source) const;
   llvm::Value* toBool(llvm::Value* value, TypeKind source) const;
 
+  std::unique_ptr<llvm::TargetMachine> createTargetMachine();
   bool verify() const;
 };
 

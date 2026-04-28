@@ -10,7 +10,8 @@
 2. `Bison`-парсер строит AST (дерево программы).
 3. Семантический анализ (`Sema`) проверяет типы, области видимости, `return`, вызовы функций и т.д.
 4. LLVM Codegen строит `LLVM IR`.
-5. LLVM backend делает объектный файл `.o` под `RISC-V`.
+5. LLVM backend может дополнительно выгрузить читаемый `asm`-листинг.
+6. LLVM backend делает объектный файл `.o` под `RISC-V`.
 
 Дальше объектный файл можно слинковать с `runtime/main.c`, получить RISC-V исполняемый файл и запустить его через `qemu-riscv64`.
 
@@ -96,14 +97,15 @@ qemu-riscv64 --version
   - `positive/` — программы, которые должны компилироваться;
   - `negative/syntax/` — синтаксические ошибки;
   - `negative/semantic/` — семантические ошибки;
-  - `integration/` — интеграционный пример (`demo_entry.lors`).
+  - `integration/` — интеграционные программы (`demo_entry.lors`, `full_feature_showcase.lors`, `prime_count.lors`).
 - `scripts/` — вспомогательные скрипты:
   - `build.sh` — сборка через CMake;
-  - `demo_run.sh` — полный демо-сценарий до запуска в QEMU;
-  - `run_tests.sh` — автопрогон positive/negative тестов.
+  - `demo_run.sh` — полный демо-сценарий с генерацией `.ll/.s/.o` до запуска в QEMU;
+  - `run_tests.sh` — автопрогон positive/negative/integration тестов.
 - `docs/` — спецификация и архитектурные документы.
 - `CMakeLists.txt` — конфигурация сборки.
 - `README.md` — основной краткий README.
+- `docs/commands.md` — компактный список команд для сборки, прогона и проверки компилятора.
 
 ## 6) Сборка проекта
 
@@ -185,7 +187,22 @@ grep -n "target triple" build/demo_entry.ll
 target triple = "riscv64-unknown-linux-gnu"
 ```
 
-## 10) Как проверить объектный файл
+## 10) Как получить asm-листинг
+
+Рабочая команда:
+
+```bash
+./build/lorsc tests/integration/demo_entry.lors -o build/demo_entry.o --emit-asm build/demo_entry.s
+```
+
+После выполнения появятся:
+
+- `build/demo_entry.s` — текстовый RISC-V asm;
+- `build/demo_entry.o` — объектный файл.
+
+Этот файл удобно показывать преподавателю: он человекочитаемее, чем бинарный `.o`, и напрямую отражает низкоуровневый код, который генерирует компилятор.
+
+## 11) Как проверить объектный файл
 
 Команда:
 
@@ -201,7 +218,7 @@ file build/demo_entry.o
 
 Если вы видите `RISC-V`, значит кодогенерация в нужную архитектуру прошла.
 
-## 11) Как выполнить линковку с `runtime/main.c`
+## 12) Как выполнить линковку с `runtime/main.c`
 
 Рабочая команда для текущей WSL-среды:
 
@@ -218,7 +235,7 @@ clang --target=riscv64-unknown-linux-gnu -fuse-ld=lld -static runtime/main.c bui
 
 Коротко: именно эта команда реально прошла в текущей рабочей среде этого репозитория.
 
-## 12) Как запустить через QEMU
+## 13) Как запустить через QEMU
 
 Команда:
 
@@ -238,7 +255,7 @@ entry() = 8
 - runtime вызвал функцию `entry()` из скомпилированного `.lors` файла;
 - программа корректно вернула результат.
 
-## 13) Как запустить все тесты
+## 14) Как запустить все тесты
 
 Команда:
 
@@ -251,6 +268,7 @@ bash scripts/run_tests.sh ./build/lorsc
 - компилирует все `tests/positive/*.lors` и ждёт успех;
 - компилирует все `tests/negative/syntax/*.lors` и ждёт ошибку;
 - компилирует все `tests/negative/semantic/*.lors` и ждёт ошибку;
+- прогоняет интеграционные программы через `.ll/.s/.o -> clang -> qemu`;
 - считает pass/fail.
 
 Успешный прогон выглядит как:
@@ -258,9 +276,9 @@ bash scripts/run_tests.sh ./build/lorsc
 - `[PASS] ...` по всем тестам;
 - `Total failed: 0`.
 
-Примечание: интеграционный сценарий с QEMU находится в `tests/integration/demo_entry.lors` и обычно проверяется отдельно командой из разделов 9-12 или скриптом `scripts/demo_run.sh`.
+Примечание: integration-примеры теперь тоже входят в `scripts/run_tests.sh`, а вручную их всё ещё можно прогонять через `scripts/demo_run.sh`.
 
-## 14) Полный сценарий от нуля до результата
+## 15) Полный сценарий от нуля до результата
 
 Ниже единая последовательность команд:
 
@@ -270,7 +288,7 @@ cd /home/matveevda/projects/LORSCODEX
 cmake -S . -B build
 cmake --build build -j
 
-./build/lorsc tests/integration/demo_entry.lors -o build/demo_entry.o --emit-llvm build/demo_entry.ll
+./build/lorsc tests/integration/demo_entry.lors -o build/demo_entry.o --emit-llvm build/demo_entry.ll --emit-asm build/demo_entry.s
 
 grep -n "target triple" build/demo_entry.ll
 file build/demo_entry.o
@@ -281,7 +299,7 @@ qemu-riscv64 build/demo_riscv
 bash scripts/run_tests.sh ./build/lorsc
 ```
 
-## 15) Типичные ошибки и их решение
+## 16) Типичные ошибки и их решение
 
 ### `cmake: command not found`
 
