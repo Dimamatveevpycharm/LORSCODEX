@@ -135,3 +135,4 @@ echo "Total failed: ${fail}"
 if [[ ${fail} -ne 0 ]]; then
   exit 1
 fi
+

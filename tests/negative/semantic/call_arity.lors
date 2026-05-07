@@ -6,3 +6,4 @@ func entry() int {
   return f(1, 2);
 }
 
+

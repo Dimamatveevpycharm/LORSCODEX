@@ -62,3 +62,4 @@ func entry() int {
   noop();
   return total;
 }
+

@@ -17,3 +17,4 @@ clang --target=riscv64-unknown-linux-gnu -fuse-ld=lld -static \
   -o "${BIN_FILE}"
 
 qemu-riscv64 "${BIN_FILE}"
+

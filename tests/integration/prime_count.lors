@@ -30,3 +30,4 @@ func countPrimes(limit int) int {
 func entry() int {
   return countPrimes(1000);
 }
+

@@ -112,3 +112,4 @@ expr         := ... (см. таблицу приоритетов)
 - `if condition must have type bool`
 - `return type mismatch: expected int, got bool`
 
+

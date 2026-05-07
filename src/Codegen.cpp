@@ -759,3 +759,4 @@ bool CodeGenerator::emitObject(const std::string& path) {
 }
 
 }  // namespace lorsc
+
