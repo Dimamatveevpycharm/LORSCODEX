@@ -140,7 +140,6 @@ bash scripts/demo_run.sh
 
 ## Документация
 
-- Подробный пошаговый гайд для новичка: [READMEchild.md](READMEchild.md)
 - Шпаргалка по командам запуска: [docs/commands.md](docs/commands.md)
 - Спецификация языка: [docs/language_spec.md](docs/language_spec.md)
 - Архитектура: [docs/architecture.md](docs/architecture.md)

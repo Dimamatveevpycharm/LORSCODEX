@@ -30,6 +30,8 @@ rendered_report_fix2/
 # Local listings and scratch files
 project_listing.txt
 all_files_listing.txt
+READMEchild.md
+readmequestions.md
 
 # Optional exported report files
 *.pdf
